@@ -53,14 +53,18 @@ def explore_fields(obj, fields):
     return asd
 
 
-def flatten(l, curr=[]):
+def flatten(l, curr=None):
     ''' Flattens arbitrary depth list of lists '''
+    if curr is None:
+        current_list = []
+    else:
+        current_list = curr
     if isinstance(l, list):
         for val in l:
-            flatten(val, curr)
-        return curr
+            flatten(val, current_list)
+        return current_list
     else:
-        curr.append(l)
+        current_list.append(l)
 
 
 def create_headers(fields, hdrs, path=[]):
