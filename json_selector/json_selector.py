@@ -53,7 +53,7 @@ def explore_fields(obj, fields):
     return asd
 
 
-def flatten(l, curr):
+def flatten(l, curr=[]):
     ''' Flattens arbitrary depth list of lists '''
     if isinstance(l, list):
         for val in l:
