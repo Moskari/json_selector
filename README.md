@@ -8,19 +8,18 @@ import json
 from json_selector.json_selector import get_fields, explore_fields, flatten, unroll_headers, create_headers
 
 # For example:
-[
-'example_bottom_lvl_field_name',
-'second_bottom_lvl_field',
-('sub_object_name', [
-    'example_2nd_lvl_field_name', 
-    'second_example_2nd_lvl_field_name']),
-('sub_object_name', [
-    ('subsub_object_name', [
-        'example_3nd_lvl_field_name'])]),
-('sub_list_name', [0, 1, 2]), # Takes three first list elements
-# Custom function for returning something from `sub_object_name`
-('sub_object_name', selector_function) 
-]    
+headers = [
+    'example_bottom_lvl_field_name',
+    'second_bottom_lvl_field',
+    ('sub_object_name', [
+        'example_2nd_lvl_field_name', 
+        'second_example_2nd_lvl_field_name']),
+    ('sub_object_name', [
+        ('subsub_object_name', [
+            'example_3nd_lvl_field_name'])]),
+    ('sub_list_name', [0, 1, 2]), # Takes three first list elements
+    # Custom function for returning something from `sub_object_name`
+    ('sub_object_name', selector_function)]    
 
 # Custom function could be i.e. following    
 
