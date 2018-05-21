@@ -18,39 +18,37 @@ def explore_fields(obj, fields):
         raise Exception(
             'Fields should be list, was %s, %s' % (
                 str(type(fields)), str(fields)))
-    asd = []
+    result = []
     for field in fields:
         if isinstance(field, str):
             if field in obj:
-                asd.append(obj[field])
+                result.append(obj[field])
             else:
-                asd.append(None)
+                result.append(None)
 
         elif isinstance(field, int):
             if len(obj) >= field + 1:
-                asd.append(obj[field])
+                result.append(obj[field])
             else:
-                asd.append(None)
+                result.append(None)
 
         elif isinstance(field, list):                    
-            asd.append([explore_fields(obj, [f]) for f in field])
+            result.append([explore_fields(obj, [f]) for f in field])
         
         elif isinstance(field, tuple):
             parent, subfields = field
             if callable(subfields): # TODO
-                #print()
-                #print(parent, obj)
                 _, tmp = subfields(obj[parent])
-                asd.append(tmp)
+                result.append(tmp)
             elif isinstance(parent, str) and parent in obj:
-                asd.append(explore_fields(obj[parent], subfields))
+                result.append(explore_fields(obj[parent], subfields))
             elif isinstance(parent, int) and len(obj) >= parent + 1:
-                asd.append(explore_fields(obj[parent], subfields))
+                result.append(explore_fields(obj[parent], subfields))
             else:
-                asd.append(None)
+                result.append(None)
         else:
             raise Exception('Unknown field %s' % str(field))
-    return asd
+    return result
 
 
 def flatten(l, curr=None):
@@ -70,7 +68,6 @@ def flatten(l, curr=None):
 def create_headers(fields, hdrs, path=[]):
     ''' Creates human readable headers for given headers '''
     if callable(fields):
-        # print(fields)
         field, _ = fields()
         hdrs.append('_'.join([path, field]))
         return
@@ -85,7 +82,57 @@ def create_headers(fields, hdrs, path=[]):
 def unroll_headers(fields, paths, path=[]):
     ''' 
     Unrolls given fields to absolute json paths. `paths`  param is the
-    return value. Takes fields in following form:
+    return value (list of strings and/or ints).
+    '''
+    if callable(fields):
+        new_path = path.copy()
+        new_path.append(fields)
+        paths.append(new_path)
+        return
+    for field in fields:
+        if isinstance(field, tuple):
+            parent, subfields = field
+            new_path = path.copy()
+            new_path.append(parent)
+            unroll_headers(subfields, paths, new_path)
+            
+        if isinstance(field, (str, int)):
+            new_path = path.copy()
+            new_path.append(field)
+            paths.append(new_path)
+      
+def get_fields(obj, json_paths):
+    ''' 
+    Takes json obj and list of unrolled json paths and returns list of rows
+    which have values corresponding to json paths or None
+    '''
+    result = []
+    for path in json_paths:
+        curr_obj_branch = obj
+        for field in path:
+            if callable(field):
+                _, data = field(curr_obj_branch)
+                curr_obj_branch = data
+                break
+            else:
+                try:
+                    curr_obj_branch = curr_obj_branch[field]
+                except:
+                    curr_obj_branch = None
+                    break
+        result.append(curr_obj_branch)
+    return result
+
+def get_data(json_data, headers, return_many=False):
+    '''
+    Takes json object and header path list which defines what data will
+    be returned from the `json_data`. Optional `return_many` is used if the
+    function is applied to list of objects. Setting `return_many` to True if
+    more efficient than calling this function multiple times.
+    
+    Returns tuple (<new header names>, <values corresponding to headers>)
+    
+    The given headers must be in the following form:
     
     # For example:
     [
@@ -115,48 +162,13 @@ def unroll_headers(fields, paths, path=[]):
             (1, ['some_field'])])]))
         return 'sum_of_two', sum(list(filter(lambda x: x is not None, skills)))
     '''
-    if callable(fields):
-        # print(fields)
-        new_path = path.copy()
-        new_path.append(fields)
-        paths.append(new_path)
-        return
-    for field in fields:
-        if isinstance(field, tuple):
-            parent, subfields = field
-            new_path = path.copy()
-            new_path.append(parent)
-            unroll_headers(subfields, paths, new_path)
-            
-        if isinstance(field, (str, int)):
-            new_path = path.copy()
-            new_path.append(field)
-            paths.append(new_path)
-      
-def get_fields(obj, json_paths):
-    ''' 
-    Takes json obj and list of unrolled json paths and returns list of rows
-    which have values corresponding to json paths or None
-    '''
-    asd = []
-    for path in json_paths:
-        curr_obj_branch = obj
-        for field in path:
-            if callable(field):
-                _, data = field(curr_obj_branch)
-                curr_obj_branch = data
-                break
-            else:
-                try:
-                    curr_obj_branch = curr_obj_branch[field]
-                except:
-                    curr_obj_branch = None
-                    break
-        asd.append(curr_obj_branch)
-    return asd
-
-
-
-
-
+    paths = []
+    unroll_headers(headers, paths)
+    new_headers = []
+    create_headers(headers, new_headers, '')
     
+    if return_many:
+        result = [get_fields(d, paths) for d in json_data]
+    else:
+        result = get_fields(json_data, paths)
+    return new_headers, result
