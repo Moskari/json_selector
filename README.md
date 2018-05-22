@@ -5,7 +5,7 @@ Enables accessing json properties by defining a graph
 ## Example
 ```python
 import json
-from json_selector.json_selector import get_fields, explore_fields, flatten, unroll_headers, create_headers
+from json_selector.json_selector import explore_fields, flatten, get_data
 
 # For example:
 headers = [
@@ -42,16 +42,11 @@ if __name__ == '__main__':
     # Data is a list of objects    
     data = f.read()
     f.close()
-    
-    paths = []
-    unroll_headers(headers, paths)
-    
-    new_headers = []
-    create_headers(headers, new_headers, '')       
-    
+
     data = json.loads(data)
-    
-    parsed_json = [get_fields(d, paths) for d in data]
+
+    # Get new generated headers and a list of lists of values
+    new_headers, parsed_json = get_data(data, headers, True)
 
     # Results to
     # new_headers == [
@@ -66,7 +61,7 @@ if __name__ == '__main__':
     #     'sub_object_name_sum_of_two']
     
     # parsed_json holds data for each row
-    # parsed_json == [[<element for each header>], [...], ..., [...]]
+    # parsed_json == [[<element for each heading>], [...], ..., [...]]
 
 ```
 
